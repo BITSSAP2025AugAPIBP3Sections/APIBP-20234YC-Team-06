@@ -1,0 +1,1309 @@
+openapi: 3.0.3
+info:
+  title: Private Messaging Service API
+  description: |
+    A secure messaging API that provides end-to-end encrypted messaging capabilities.
+
+  version: 1.0.0
+
+servers:
+  - url: https://message.api.com/v1
+    description: Production API Endpoint
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Users
+    description: User profile and status management
+  - name: Friends
+    description: Friend list and friend request management
+  - name: Messages
+    description: Send and retrieve messages
+  - name: Conversations
+    description: Manage one-on-one and group conversations
+  - name: Read Receipts
+    description: Message delivery and read status
+
+security:
+  - BearerAuth: []
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: |
+        Creates a new user account. The client must generate an encryption key pair
+        and provide the public key during registration for E2E encryption. **Registration requires only username, password, and publicKey.**
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+                - publicKey
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 30
+                  pattern: '^[a-zA-Z0-9_-]+$'
+                  example: john_doe
+                password:
+                  type: string
+                  minLength: 8
+                  example: SecureP@ssw0rd
+                publicKey:
+                  type: string
+                  description: Base64-encoded public key for E2E encryption
+                  example: LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0...
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          headers:
+            Location:
+              description: URL of the newly created user resource
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: john_doe
+                password:
+                  type: string
+                  example: SecureP@ssw0rd
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: New access token generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Invalidates the current access and refresh tokens
+      responses:
+        '204':
+          description: Successfully logged out
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      tags:
+        - Users
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  maxLength: 50
+                avatar:
+                  type: string
+                  format: uri
+                bio:
+                  type: string
+                  maxLength: 200
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/me/status:
+    put:
+      tags:
+        - Users
+      summary: Update user status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  $ref: '#/components/schemas/UserStatus'
+                customMessage:
+                  type: string
+                  maxLength: 100
+                  example: "In a meeting"
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    $ref: '#/components/schemas/UserStatus'
+                  customMessage:
+                    type: string
+                  updatedAt:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/{userId}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      description: Only returns full profile for friends, limited info for non-friends
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/search:
+    get:
+      tags:
+        - Users
+      summary: Search for users
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Username or display name to search
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserSearchResult'
+                  total:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /friends:
+    get:
+      tags:
+        - Friends
+      summary: Get friend list
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [online, offline, away, all]
+            default: all
+      responses:
+        '200':
+          description: Friend list retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  friends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Friend'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /friends/requests:
+    get:
+      tags:
+        - Friends
+      summary: Get pending friend requests
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [incoming, outgoing, all]
+            default: incoming
+      responses:
+        '200':
+          description: Friend requests retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FriendRequest'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Friends
+      summary: Send friend request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                message:
+                  type: string
+                  maxLength: 200
+                  example: "Hey! Let's connect on this app."
+      responses:
+        '201':
+          description: Friend request sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /friends/requests/{requestId}/accept:
+    post:
+      tags:
+        - Friends
+      summary: Accept friend request
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Friend request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Friend'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /friends/requests/{requestId}/decline:
+    post:
+      tags:
+        - Friends
+      summary: Decline friend request
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Friend request declined
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /friends/{userId}:
+    delete:
+      tags:
+        - Friends
+      summary: Remove friend
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Friend removed successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /conversations:
+    get:
+      tags:
+        - Conversations
+      summary: Get all conversations
+      description: Returns list of all one-on-one and group conversations
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Conversations retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Conversation'
+                  total:
+                    type: integer
+                  hasMore:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Conversations
+      summary: Create a group conversation
+      description: Creates a new group chat. One-on-one conversations are created automatically when sending first message.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - participantIds
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                  example: "Project Team"
+                participantIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  minItems: 2
+                  description: All participants must be in your friend list
+                avatar:
+                  type: string
+                  format: uri
+      responses:
+        '201':
+          description: Group conversation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /conversations/{conversationId}:
+    get:
+      tags:
+        - Conversations
+      summary: Get conversation details
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Conversation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      tags:
+        - Conversations
+      summary: Update group conversation
+      description: Only works for group conversations. Admins only.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                avatar:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Conversation updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - Conversations
+      summary: Leave or delete conversation
+      description: Leave a group conversation or delete a one-on-one conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Conversation deleted or left successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /conversations/{conversationId}/participants:
+    post:
+      tags:
+        - Conversations
+      summary: Add participants to group
+      description: Add new participants to a group conversation. Admins only.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - participantIds
+              properties:
+                participantIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  minItems: 1
+      responses:
+        '200':
+          description: Participants added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /conversations/{conversationId}/participants/{userId}:
+    delete:
+      tags:
+        - Conversations
+      summary: Remove participant from group
+      description: Remove a participant from group conversation. Admins only.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Participant removed
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /messages:
+    post:
+      tags:
+        - Messages
+      summary: Send a message
+      description: |
+        Send an encrypted message to a conversation.
+
+        **Encryption Flow:**
+        1. Client encrypts message content with recipient's public key(s)
+        2. Sends encrypted payload to server
+        3. Server stores and forwards encrypted message
+        4. Recipients decrypt with their private keys
+
+        **Important:** For group chats, the message must be encrypted separately for each participant.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - conversationId
+                - encryptedContent
+              properties:
+                conversationId:
+                  type: string
+                  format: uuid
+                  description: Must be with a friend or group containing only friends
+                encryptedContent:
+                  type: object
+                  description: Map of userId to encrypted message content
+                  additionalProperties:
+                    type: string
+                  example:
+                    "123e4567-e89b-12d3-a456-426614174000": "U2FsdGVkX1+..."
+                    "987f6543-e21c-45d6-b789-123456789abc": "U2FsdGVkX1+..."
+                messageType:
+                  type: string
+                  enum: [text, image, file, audio, video]
+                  default: text
+                metadata:
+                  type: object
+                  description: Optional metadata (file size, dimensions, duration, etc.)
+                  properties:
+                    fileName:
+                      type: string
+                    fileSize:
+                      type: integer
+                    mimeType:
+                      type: string
+                    duration:
+                      type: integer
+                      description: For audio/video in seconds
+                replyToMessageId:
+                  type: string
+                  format: uuid
+                  description: ID of message being replied to
+      responses:
+        '201':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Cannot send message - recipient not in friend list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /conversations/{conversationId}/messages:
+    get:
+      tags:
+        - Messages
+      summary: Get conversation message history
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: before
+          in: query
+          description: Get messages before this message ID (for pagination)
+          schema:
+            type: string
+            format: uuid
+        - name: after
+          in: query
+          description: Get messages after this message ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Message history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  hasMore:
+                    type: boolean
+                  total:
+                    type: integer
+        '403':
+          description: Not a participant in this conversation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /messages/{messageId}:
+    get:
+      tags:
+        - Messages
+      summary: Get a specific message
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Message retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - Messages
+      summary: Delete a message
+      description: Only message sender can delete. Deletion is permanent.
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Message deleted successfully
+        '403':
+          description: Not authorized to delete this message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /messages/{messageId}/edit:
+    patch:
+      tags:
+        - Messages
+      summary: Edit a message
+      description: Only message sender can edit. Message history is preserved.
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - encryptedContent
+              properties:
+                encryptedContent:
+                  type: object
+                  description: Updated encrypted content for each recipient
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Message edited successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /messages/{messageId}/read:
+    post:
+      tags:
+        - Read Receipts
+      summary: Mark message as read
+      description: Updates read receipt for the current user
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Message marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageId:
+                    type: string
+                    format: uuid
+                  readAt:
+                    type: string
+                    format: date-time
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /conversations/{conversationId}/read:
+    post:
+      tags:
+        - Read Receipts
+      summary: Mark all messages in conversation as read
+      description: Marks all unread messages in the conversation as read
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Messages marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversationId:
+                    type: string
+                    format: uuid
+                  markedCount:
+                    type: integer
+                    description: Number of messages marked as read
+                  readAt:
+                    type: string
+                    format: date-time
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /messages/{messageId}/receipts:
+    get:
+      tags:
+        - Read Receipts
+      summary: Get read receipts for a message
+      description: Get delivery and read status for all recipients
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Read receipts retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageId:
+                    type: string
+                    format: uuid
+                  receipts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReadReceipt'
+        '403':
+          description: Not authorized - must be message sender
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login or registration
+
+  responses:
+    BadRequest:
+      description: Bad request - validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication failed - invalid or missing credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Authorization failed - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Conflict - resource already exists or constraint violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          example: INVALID_INPUT
+        message:
+          type: string
+          example: "Request payload validation failed"
+        details:
+          type: array
+          items:
+            type: object
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: Short-lived token for accessing protected resources
+        refreshToken:
+          type: string
+          description: Long-lived token for refreshing the access token
+        userId:
+          type: string
+          format: uuid
+        expiresIn:
+          type: integer
+          description: Lifetime of the access token in seconds
+          example: 3600
+    UserStatus:
+      type: string
+      enum: [online, offline, away]
+      default: offline
+      example: online
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        displayName:
+          type: string
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        customStatus:
+          type: string
+          maxLength: 100
+        publicKey:
+          type: string
+          description: Base64-encoded public key for E2E encryption
+        createdAt:
+          type: string
+          format: date-time
+        lastSeen:
+          type: string
+          format: date-time
+    UserSearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        displayName:
+          type: string
+    Friend:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            friendshipId:
+              type: string
+              format: uuid
+            since:
+              type: string
+              format: date-time
+            status:
+              $ref: '#/components/schemas/UserStatus'
+    FriendRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        recipientId:
+          type: string
+          format: uuid
+        message:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+        createdAt:
+          type: string
+          format: date-time
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [one-on-one, group]
+        name:
+          type: string
+          description: Only for group chats
+        avatar:
+          type: string
+          format: uri
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationParticipant'
+        lastMessage:
+          $ref: '#/components/schemas/MessageSnippet'
+        unreadCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ConversationParticipant:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        username:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [member, admin]
+        joinedAt:
+          type: string
+          format: date-time
+    MessageSnippet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        snippet:
+          type: string
+          description: A short snippet of the message content
+        timestamp:
+          type: string
+          format: date-time
+        isRead:
+          type: boolean
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        encryptedContent:
+          type: object
+          description: Map of userId to encrypted message content
+          additionalProperties:
+            type: string
+        messageType:
+          type: string
+          enum: [text, image, file, audio, video]
+        metadata:
+          type: object
+        replyToMessageId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [sent, delivered, read, deleted]
+    ReadReceipt:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        deliveredAt:
+          type: string
+          format: date-time
+          nullable: true
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
