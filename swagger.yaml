@@ -3,7 +3,7 @@ info:
   title: Chat Service API
   version: 1.0.0
 servers:
-  - url: https://api.example.com
+  - url: https://privychat.com
 tags:
   - name: Users
     description: User registration and retrieval
