@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Chat Service API
+  title: PrivyChat API
   version: 1.0.0
 servers:
   - url: https://privychat.com
