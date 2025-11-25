@@ -1,0 +1,320 @@
+openapi: 3.0.3
+info:
+  title: PrivyChat API
+  version: 1.0.0
+servers:
+  - url: https://privychat.com
+tags:
+  - name: Users
+    description: User registration and retrieval
+  - name: Chats
+    description: Chat listing and creation
+  - name: Chat membership and roles
+    description: Manage chat participants and roles
+  - name: Messages
+    description: Send and list messages
+  - name: Message delivery
+    description: Delivery acknowledgements
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    ObjectId:
+      type: string
+      pattern: "^[a-fA-F0-9]{24}$"
+    User:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/ObjectId" }
+        username: { type: string }
+        publicKey: { type: string }
+        avatarUrl: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, username, publicKey]
+    CreateUserRequest:
+      type: object
+      properties:
+        username: { type: string }
+        password: { type: string }
+        publicKey: { type: string }
+        avatarUrl: { type: string }
+      required: [username, password, publicKey]
+    ParticipantKey:
+      type: object
+      properties:
+        userId: { $ref: "#/components/schemas/ObjectId" }
+        encKey: { type: string }
+      required: [userId, encKey]
+    RoleEntry:
+      type: object
+      properties:
+        userId: { $ref: "#/components/schemas/ObjectId" }
+        role:
+          type: string
+          enum: [admin, member]
+      required: [userId, role]
+    Attachment:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [image, file]
+        url: { type: string }
+      required: [type, url]
+    Chat:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/ObjectId" }
+        type:
+          type: string
+          enum: [direct, group]
+        participants:
+          type: array
+          items: { $ref: "#/components/schemas/ObjectId" }
+        participantKeys:
+          type: array
+          items: { $ref: "#/components/schemas/ParticipantKey" }
+        name: { type: string }
+        owner: { $ref: "#/components/schemas/ObjectId" }
+        roles:
+          type: array
+          items: { $ref: "#/components/schemas/RoleEntry" }
+        createdAt: { type: string, format: date-time }
+      required: [id, type, participants]
+    CreateGrpChatRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [direct, group]
+        participantIds:
+          type: array
+          items: { $ref: "#/components/schemas/ObjectId" }
+        name: { type: string }
+        owner: { $ref: "#/components/schemas/ObjectId" }
+      required: [type, participantIds]
+    Message:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/ObjectId" }
+        chatId: { $ref: "#/components/schemas/ObjectId" }
+        senderId: { $ref: "#/components/schemas/ObjectId" }
+        body: { type: string }
+        attachments:
+          type: array
+          items: { $ref: "#/components/schemas/Attachment" }
+        deliveryStatus:
+          type: string
+          enum: [sent, delivered]
+        replyTo: { $ref: "#/components/schemas/ObjectId" }
+        serverTimestamp: { type: string, format: date-time }
+      required: [id, chatId, senderId, body, deliveryStatus, serverTimestamp]
+    SendMessageRequest:
+      type: object
+      properties:
+        chatId: { $ref: "#/components/schemas/ObjectId" }
+        body: { type: string }
+        attachments:
+          type: array
+          items: { $ref: "#/components/schemas/Attachment" }
+        replyTo: { $ref: "#/components/schemas/ObjectId" }
+      required: [chatId, body]
+    AckResponse:
+      type: object
+      properties:
+        acknowledged: { type: boolean }
+      required: [acknowledged]
+paths:
+  /users:
+    post:
+      tags: [Users]
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateUserRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+  /users/{username}:
+    get:
+      tags: [Users]
+      summary: Get user by username
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema: { $ref: "#/components/schemas/ObjectId" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "404": { description: Not found }
+  /chats:
+    get:
+      tags: [Chats]
+      security: [ { bearerAuth: [] } ]
+      summary: List chats for user
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema: { $ref: "#/components/schemas/ObjectId" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Chat" }
+    post:
+      tags: [Chats]
+      security: [ { bearerAuth: [] } ]
+      summary: Create chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateGrpChatRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Chat" }
+  /chats/{id}:
+    get:
+      tags: [Chats]
+      security: [ { bearerAuth: [] } ]
+      summary: Get chat
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { $ref: "#/components/schemas/ObjectId" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Chat" }
+        "404": { description: Not found }
+  /chats/{id}/participants:
+    post:
+      tags: ["Chat membership and roles"]
+      security: [ { bearerAuth: [] } ]
+      summary: Add participant
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { $ref: "#/components/schemas/ObjectId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId: { $ref: "#/components/schemas/ObjectId" }
+              required: [userId]
+      responses:
+        "200":
+          description: Updated chat
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Chat" }
+  /chats/{id}/roles:
+    post:
+      tags: ["Chat membership and roles"]
+      security: [ { bearerAuth: [] } ]
+      summary: Set role for user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { $ref: "#/components/schemas/ObjectId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId: { $ref: "#/components/schemas/ObjectId" }
+                role:
+                  type: string
+                  enum: [admin, member]
+              required: [userId, role]
+      responses:
+        "200":
+          description: Updated chat
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Chat" }
+  /messages:
+    get:
+      tags: [Messages]
+      security: [ { bearerAuth: [] } ]
+      summary: List messages by chat
+      parameters:
+        - in: query
+          name: chatId
+          required: true
+          schema: { $ref: "#/components/schemas/ObjectId" }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - in: query
+          name: after
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Message" }
+    post:
+      tags: [Messages]
+      security: [ { bearerAuth: [] } ]
+      summary: Send message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SendMessageRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Message" }
+  /messages/{id}/ack:
+    post:
+      tags: ["Message delivery"]
+      security: [ { bearerAuth: [] } ]
+      summary: Acknowledge delivery
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { $ref: "#/components/schemas/ObjectId" }
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AckResponse" }
+security:
+  - bearerAuth: []
