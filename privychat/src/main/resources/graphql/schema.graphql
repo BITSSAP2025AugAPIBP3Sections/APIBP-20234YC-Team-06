@@ -1,0 +1,167 @@
+"""
+Custom scalars
+"""
+scalar ObjectID
+scalar DateTime
+
+"""
+Enums
+"""
+enum ChatType {
+  direct
+  group
+}
+
+enum AttachmentType {
+  image
+  file
+}
+
+enum Role {
+  admin
+  member
+}
+
+enum DeliveryStatus {
+  sent
+  delivered
+}
+
+"""
+Core types
+"""
+type User {
+  id: ObjectID!
+  username: String!
+  publicKey: String!
+  avatarUrl: String
+  createdAt: DateTime
+}
+
+type ParticipantKey {
+  userId: ObjectID!
+  encKey: String!
+}
+
+type RoleEntry {
+  userId: ObjectID!
+  role: Role!
+}
+
+type Attachment {
+  type: AttachmentType!
+  url: String!
+}
+
+type Chat {
+  id: ObjectID!
+  type: ChatType!
+  participants: [ObjectID!]!
+  participantKeys: [ParticipantKey!]
+  name: String
+  owner: ObjectID
+  roles: [RoleEntry!]
+  createdAt: DateTime
+}
+
+type Message {
+  id: ObjectID!
+  chatId: ObjectID!
+  senderId: ObjectID!
+  body: String!
+  attachments: [Attachment!]
+  deliveryStatus: DeliveryStatus!
+  replyTo: ObjectID
+  serverTimestamp: DateTime!
+}
+
+type AckResponse {
+  acknowledged: Boolean!
+}
+
+"""
+Inputs
+"""
+input CreateUserInput {
+  username: String!
+  password: String!
+  publicKey: String!
+  avatarUrl: String
+}
+
+input CreateChatInput {
+  type: ChatType!
+  participantIds: [ObjectID!]!
+  name: String
+  owner: ObjectID
+}
+
+input AttachmentInput {
+  type: AttachmentType!
+  url: String!
+}
+
+input SendMessageInput {
+  chatId: ObjectID!
+  body: String!
+  attachments: [AttachmentInput!]
+  replyTo: ObjectID
+}
+
+"""
+Root operations
+"""
+type Query {
+  """
+  Get user by username.
+  Note: OpenAPI labels the path param as {username}.
+  """
+  userByUsername(username: String!): User
+
+  """
+  List chats for a user
+  """
+  chats(userId: ObjectID!): [Chat!]!
+
+  """
+  Get a chat by id
+  """
+  chat(id: ObjectID!): Chat
+
+  """
+  List messages by chat with pagination controls
+  """
+  messages(chatId: ObjectID!): [Message!]!
+}
+
+type Mutation {
+  """
+  Register a new user
+  """
+  registerUser(input: CreateUserInput!): User!
+
+  """
+  Create a chat (direct or group)
+  """
+  createChat(input: CreateChatInput!): Chat!
+
+  """
+  Add a participant to a chat
+  """
+  addChatParticipant(chatId: ObjectID!, userId: ObjectID!): Chat!
+
+  """
+  Set a role for a user in a chat
+  """
+  setChatUserRole(chatId: ObjectID!, userId: ObjectID!, role: Role!): Chat!
+
+  """
+  Send a message
+  """
+  sendMessage(input: SendMessageInput!): Message!
+
+  """
+  Acknowledge message delivery
+  """
+  acknowledgeMessage(id: ObjectID!): AckResponse!
+}
