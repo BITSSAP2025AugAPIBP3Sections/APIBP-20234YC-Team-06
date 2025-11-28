@@ -1,25 +1,29 @@
 package com.privychat.model;
 
 import com.privychat.model.enums.DeliveryStatus;
-import com.privychat.model.scalar.ObjectID;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
+@Document(collection = "messages")
 public class Message {
-    private ObjectID id;
-    private ObjectID chatId;
-    private ObjectID senderId;
+    @Id
+    private ObjectId id;
+    private ObjectId chatId;
+    private ObjectId senderId;
     private String body;
     private List<Attachment> attachments = new ArrayList<>();
     private DeliveryStatus deliveryStatus;
-    private ObjectID replyTo;
+    private ObjectId replyTo;
     private Instant serverTimestamp;
 
     public Message() {}
 
-    public Message(ObjectID id, ObjectID chatId, ObjectID senderId, String body, List<Attachment> attachments, DeliveryStatus deliveryStatus, ObjectID replyTo, Instant serverTimestamp) {
+    public Message(ObjectId id, ObjectId chatId, ObjectId senderId, String body, List<Attachment> attachments, DeliveryStatus deliveryStatus, ObjectId replyTo, Instant serverTimestamp) {
         this.id = id;
         this.chatId = chatId;
         this.senderId = senderId;
@@ -30,20 +34,20 @@ public class Message {
         this.serverTimestamp = serverTimestamp;
     }
 
-    public ObjectID getId() { return id; }
-    public void setId(ObjectID id) { this.id = id; }
-    public ObjectID getChatId() { return chatId; }
-    public void setChatId(ObjectID chatId) { this.chatId = chatId; }
-    public ObjectID getSenderId() { return senderId; }
-    public void setSenderId(ObjectID senderId) { this.senderId = senderId; }
+    public ObjectId getId() { return id; }
+    public void setId(ObjectId id) { this.id = id; }
+    public ObjectId getChatId() { return chatId; }
+    public void setChatId(ObjectId chatId) { this.chatId = chatId; }
+    public ObjectId getSenderId() { return senderId; }
+    public void setSenderId(ObjectId senderId) { this.senderId = senderId; }
     public String getBody() { return body; }
     public void setBody(String body) { this.body = body; }
     public List<Attachment> getAttachments() { return attachments; }
     public void setAttachments(List<Attachment> attachments) { this.attachments = attachments != null ? attachments : new ArrayList<>(); }
     public DeliveryStatus getDeliveryStatus() { return deliveryStatus; }
     public void setDeliveryStatus(DeliveryStatus deliveryStatus) { this.deliveryStatus = deliveryStatus; }
-    public ObjectID getReplyTo() { return replyTo; }
-    public void setReplyTo(ObjectID replyTo) { this.replyTo = replyTo; }
+    public ObjectId getReplyTo() { return replyTo; }
+    public void setReplyTo(ObjectId replyTo) { this.replyTo = replyTo; }
     public Instant getServerTimestamp() { return serverTimestamp; }
     public void setServerTimestamp(Instant serverTimestamp) { this.serverTimestamp = serverTimestamp; }
 
@@ -58,4 +62,3 @@ public class Message {
     @Override
     public int hashCode() { return Objects.hash(id); }
 }
-

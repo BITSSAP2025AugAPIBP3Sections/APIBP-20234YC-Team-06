@@ -16,16 +16,23 @@
         <mongodb:createCollection collectionName="${messagesCollection}"/>
     </changeSet>
 
-    <changeSet id="v1-create-indexes" author="privychat" labels="indexes" contextFilter="prod,dev" runOnChange="true">
+    <changeSet id="v1-create-indexes" author="privychat" labels="indexes" runOnChange="true">
+        <!-- Users unique username -->
         <mongodb:createIndex collectionName="${usersCollection}">
             <mongodb:keys>{"username": 1}</mongodb:keys>
-            <mongodb:options>{"unique": true}</mongodb:options>
+            <mongodb:options>{"name": "idx_users_username", "unique": true}</mongodb:options>
         </mongodb:createIndex>
+
+        <!-- Chats explicit _id index (although Mongo creates one by default) -->
         <mongodb:createIndex collectionName="${chatsCollection}">
-            <mongodb:keys>{"chatId": 1}</mongodb:keys>
+            <mongodb:keys>{"_id": 1}</mongodb:keys>
+            <mongodb:options>{"name": "idx_chats_id"}</mongodb:options>
         </mongodb:createIndex>
+
+        <!-- Messages explicit _id index -->
         <mongodb:createIndex collectionName="${messagesCollection}">
-            <mongodb:keys>{"msgId": 1}</mongodb:keys>
+            <mongodb:keys>{"_id": 1}</mongodb:keys>
+            <mongodb:options>{"name": "idx_messages_id"}</mongodb:options>
         </mongodb:createIndex>
     </changeSet>
 

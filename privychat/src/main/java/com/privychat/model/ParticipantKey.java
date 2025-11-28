@@ -1,21 +1,22 @@
 package com.privychat.model;
 
-import com.privychat.model.scalar.ObjectID;
+import org.bson.types.ObjectId;
+
 import java.util.Objects;
 
 public class ParticipantKey {
-    private ObjectID userId;
+    private ObjectId userId;
     private String encKey;
 
     public ParticipantKey() {}
 
-    public ParticipantKey(ObjectID userId, String encKey) {
+    public ParticipantKey(ObjectId userId, String encKey) {
         this.userId = userId;
         this.encKey = encKey;
     }
 
-    public ObjectID getUserId() { return userId; }
-    public void setUserId(ObjectID userId) { this.userId = userId; }
+    public ObjectId getUserId() { return userId; }
+    public void setUserId(ObjectId userId) { this.userId = userId; }
     public String getEncKey() { return encKey; }
     public void setEncKey(String encKey) { this.encKey = encKey; }
 
@@ -30,4 +31,3 @@ public class ParticipantKey {
     @Override
     public int hashCode() { return Objects.hash(userId); }
 }
-

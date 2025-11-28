@@ -1,31 +1,30 @@
 package com.privychat.model.input;
 
-import com.privychat.model.scalar.ObjectID;
+import org.bson.types.ObjectId;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SendMessageInput {
-    private ObjectID chatId;
+    private ObjectId chatId;
     private String body;
     private List<AttachmentInput> attachments = new ArrayList<>();
-    private ObjectID replyTo;
+    private ObjectId replyTo;
 
     public SendMessageInput() {}
 
-    public SendMessageInput(ObjectID chatId, String body, List<AttachmentInput> attachments, ObjectID replyTo) {
+    public SendMessageInput(ObjectId chatId, String body, List<AttachmentInput> attachments, ObjectId replyTo) {
         this.chatId = chatId;
         this.body = body;
         if (attachments != null) this.attachments = attachments;
         this.replyTo = replyTo;
     }
 
-    public ObjectID getChatId() { return chatId; }
-    public void setChatId(ObjectID chatId) { this.chatId = chatId; }
+    public ObjectId getChatId() { return chatId; }
+    public void setChatId(ObjectId chatId) { this.chatId = chatId; }
     public String getBody() { return body; }
     public void setBody(String body) { this.body = body; }
     public List<AttachmentInput> getAttachments() { return attachments; }
     public void setAttachments(List<AttachmentInput> attachments) { this.attachments = attachments != null ? attachments : new ArrayList<>(); }
-    public ObjectID getReplyTo() { return replyTo; }
-    public void setReplyTo(ObjectID replyTo) { this.replyTo = replyTo; }
+    public ObjectId getReplyTo() { return replyTo; }
+    public void setReplyTo(ObjectId replyTo) { this.replyTo = replyTo; }
 }
-
