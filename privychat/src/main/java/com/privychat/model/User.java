@@ -1,11 +1,15 @@
 package com.privychat.model;
 
-import com.privychat.model.scalar.ObjectID;
 import java.time.Instant;
 import java.util.Objects;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
+@Document(collection = "users")
 public class User {
-    private ObjectID id;
+    @Id
+    private ObjectId id;
     private String username;
     private String publicKey;
     private String avatarUrl;
@@ -13,7 +17,7 @@ public class User {
 
     public User() {}
 
-    public User(ObjectID id, String username, String publicKey, String avatarUrl, Instant createdAt) {
+    public User(ObjectId id, String username, String publicKey, String avatarUrl, Instant createdAt) {
         this.id = id;
         this.username = username;
         this.publicKey = publicKey;
@@ -21,8 +25,8 @@ public class User {
         this.createdAt = createdAt;
     }
 
-    public ObjectID getId() { return id; }
-    public void setId(ObjectID id) { this.id = id; }
+    public ObjectId getId() { return id; }
+    public void setId(ObjectId id) { this.id = id; }
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
     public String getPublicKey() { return publicKey; }
@@ -48,4 +52,3 @@ public class User {
         return "User{" + "id=" + id + ", username='" + username + '\'' + '}';
     }
 }
-

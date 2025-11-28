@@ -1,22 +1,22 @@
 package com.privychat.model;
 
 import com.privychat.model.enums.Role;
-import com.privychat.model.scalar.ObjectID;
+import org.bson.types.ObjectId;
 import java.util.Objects;
 
 public class RoleEntry {
-    private ObjectID userId;
+    private ObjectId userId;
     private Role role;
 
     public RoleEntry() {}
 
-    public RoleEntry(ObjectID userId, Role role) {
+    public RoleEntry(ObjectId userId, Role role) {
         this.userId = userId;
         this.role = role;
     }
 
-    public ObjectID getUserId() { return userId; }
-    public void setUserId(ObjectID userId) { this.userId = userId; }
+    public ObjectId getUserId() { return userId; }
+    public void setUserId(ObjectId userId) { this.userId = userId; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
 
@@ -31,4 +31,3 @@ public class RoleEntry {
     @Override
     public int hashCode() { return Objects.hash(userId, role); }
 }
-

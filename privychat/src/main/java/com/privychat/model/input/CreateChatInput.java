@@ -1,19 +1,19 @@
 package com.privychat.model.input;
 
 import com.privychat.model.enums.ChatType;
-import com.privychat.model.scalar.ObjectID;
+import org.bson.types.ObjectId;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CreateChatInput {
     private ChatType type;
-    private List<ObjectID> participantIds = new ArrayList<>();
+    private List<ObjectId> participantIds = new ArrayList<>();
     private String name;
-    private ObjectID owner;
+    private ObjectId owner;
 
     public CreateChatInput() {}
 
-    public CreateChatInput(ChatType type, List<ObjectID> participantIds, String name, ObjectID owner) {
+    public CreateChatInput(ChatType type, List<ObjectId> participantIds, String name, ObjectId owner) {
         this.type = type;
         if (participantIds != null) this.participantIds = participantIds;
         this.name = name;
@@ -22,11 +22,10 @@ public class CreateChatInput {
 
     public ChatType getType() { return type; }
     public void setType(ChatType type) { this.type = type; }
-    public List<ObjectID> getParticipantIds() { return participantIds; }
-    public void setParticipantIds(List<ObjectID> participantIds) { this.participantIds = participantIds != null ? participantIds : new ArrayList<>(); }
+    public List<ObjectId> getParticipantIds() { return participantIds; }
+    public void setParticipantIds(List<ObjectId> participantIds) { this.participantIds = participantIds != null ? participantIds : new ArrayList<>(); }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    public ObjectID getOwner() { return owner; }
-    public void setOwner(ObjectID owner) { this.owner = owner; }
+    public ObjectId getOwner() { return owner; }
+    public void setOwner(ObjectId owner) { this.owner = owner; }
 }
-
