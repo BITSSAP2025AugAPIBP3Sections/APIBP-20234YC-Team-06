@@ -1,3 +1,7 @@
+## 📌 Project Details
+End to End encrypted chat Application.
+
+
 ## 📌 Team Details
 
 | Name               | Roll Number    |
