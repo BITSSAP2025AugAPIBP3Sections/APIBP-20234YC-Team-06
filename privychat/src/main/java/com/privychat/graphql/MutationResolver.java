@@ -15,6 +15,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -37,9 +38,18 @@ public class MutationResolver {
 
     @MutationMapping
     public Chat createChat(@Argument CreateChatInput input) {
+        // Use string IDs directly (input now carries hex strings)
+        List<String> participantIdsHex = input.getParticipantIds() == null ? List.of() : input.getParticipantIds();
+        String ownerHex = input.getOwner();
+        Map<String, Object> body = Map.of(
+                "type", input.getType().name(),
+                "participantIds", participantIdsHex,
+                "name", input.getName(),
+                "owner", ownerHex
+        );
         return client.post()
                 .uri("/chats")
-                .bodyValue(input)
+                .bodyValue(body)
                 .retrieve()
                 .bodyToMono(Chat.class)
                 .onErrorResume(e -> Mono.empty())

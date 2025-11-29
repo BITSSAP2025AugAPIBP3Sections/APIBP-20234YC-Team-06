@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatService {
@@ -24,9 +25,14 @@ public class ChatService {
     public Chat createChat(CreateChatInput input) {
         Chat chat = new Chat();
         chat.setType(input.getType());
-        chat.setParticipants(new ArrayList<>(input.getParticipantIds()));
+        // Convert participantIds hex strings to ObjectId
+        List<ObjectId> participants = input.getParticipantIds().stream()
+                .filter(id -> id != null && !id.isBlank())
+                .map(ObjectId::new)
+                .collect(Collectors.toList());
+        chat.setParticipants(participants);
         chat.setName(input.getName());
-        chat.setOwner(input.getOwner());
+        chat.setOwner(input.getOwner() != null && !input.getOwner().isBlank() ? new ObjectId(input.getOwner()) : null);
         chat.setCreatedAt(Instant.now());
         return chatRepository.save(chat);
     }
