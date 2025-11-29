@@ -5,3 +5,6 @@ spring:
     mongodb:
       uri: mongodb://privychat:privychat%40API@localhost:27017/privychat?authSource=admin
       database: privychat
+  graphql:
+    graphiql:
+      enabled: true
