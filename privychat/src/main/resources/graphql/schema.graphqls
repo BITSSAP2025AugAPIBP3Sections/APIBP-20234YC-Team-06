@@ -91,9 +91,9 @@ input CreateUserInput {
 
 input CreateChatInput {
   type: ChatType!
-  participantIds: [ObjectID!]!
+  participantIds: [String!]! # hex strings
   name: String
-  owner: ObjectID
+  owner: String # hex string
 }
 
 input AttachmentInput {
@@ -102,10 +102,10 @@ input AttachmentInput {
 }
 
 input SendMessageInput {
-  chatId: ObjectID!
+  chatId: String! # hex string
   body: String!
   attachments: [AttachmentInput!]
-  replyTo: ObjectID
+  replyTo: String # hex string
 }
 
 """
