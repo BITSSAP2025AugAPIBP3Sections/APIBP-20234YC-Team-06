@@ -158,7 +158,7 @@ type Mutation {
   """
   Send a message
   """
-  sendMessage(input: SendMessageInput!): Message!
+  sendMessage(senderId: ObjectID!, input: SendMessageInput!): Message!
 
   """
   Acknowledge message delivery
