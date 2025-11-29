@@ -16,17 +16,30 @@ public class UsersController {
         this.userService = userService;
     }
 
+    /**
+     * Registers a new user.
+     * POST /users
+     *
+     * @param input the user registration data containing username, password, publicKey, and avatarUrl
+     * @return 201 Created with the created user object
+     */
     @PostMapping
     public ResponseEntity<User> register(@RequestBody CreateUserInput input) {
-        User created = userService.register(input);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        User user = userService.register(input);
+        return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
 
+    /**
+     * Retrieves a user by their username.
+     * GET /users/{username}
+     *
+     * @param username the username to search for
+     * @return 200 OK with the user if found, or 404 Not Found if user doesn't exist
+     */
     @GetMapping("/{username}")
     public ResponseEntity<User> getByUsername(@PathVariable String username) {
         return userService.findByUsername(username)
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+                .orElse(ResponseEntity.notFound().build());
     }
 }
-
