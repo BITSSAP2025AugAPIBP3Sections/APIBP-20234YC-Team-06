@@ -25,13 +25,13 @@ public class MessageService {
 
     public Message sendMessage(ObjectId senderId, SendMessageInput input) {
         Message msg = new Message();
-        msg.setChatId(input.getChatId());
+        msg.setChatId(input.getChatId() != null ? new ObjectId(input.getChatId()) : null);
         msg.setSenderId(senderId);
         msg.setBody(input.getBody());
         List<Attachment> attachments = input.getAttachments() == null ? List.of() :
                 input.getAttachments().stream().map(this::toAttachment).collect(Collectors.toList());
         msg.setAttachments(attachments);
-        msg.setReplyTo(input.getReplyTo());
+        msg.setReplyTo(input.getReplyTo() != null ? new ObjectId(input.getReplyTo()) : null);
         msg.setDeliveryStatus(DeliveryStatus.sent);
         msg.setServerTimestamp(Instant.now());
         return messageRepository.save(msg);
